@@ -1,3 +1,4 @@
+//! Author: backyes@gmail.com
 #include "pkt_buff.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@ char fname[QUEUE_NUM][256]={
 	"/home/backyes/trace/64.pcap",
 	"/home/backyes/trace/64.pcap",
 	"/home/backyes/trace/64.pcap",
+#endif
 	"/home/backyes/trace/fix_split/split0.pcap",
 	"/home/backyes/trace/fix_split/split1.pcap",
 	"/home/backyes/trace/fix_split/split2.pcap",
@@ -33,7 +35,7 @@ char fname[QUEUE_NUM][256]={
 	"/home/backyes/trace/fix_split/split5.pcap",
 	"/home/backyes/trace/fix_split/split6.pcap",
 	"/home/backyes/trace/fix_split/split7.pcap"
-#endif
+#if 0
 	"/home/backyes/trace/80_2_tcpdump_split/split0.pcap",
 	"/home/backyes/trace/80_2_tcpdump_split/split1.pcap",
 	"/home/backyes/trace/80_2_tcpdump_split/split2.pcap",
@@ -42,7 +44,6 @@ char fname[QUEUE_NUM][256]={
 	"/home/backyes/trace/80_2_tcpdump_split/split5.pcap",
 	"/home/backyes/trace/80_2_tcpdump_split/split6.pcap",
 	"/home/backyes/trace/80_2_tcpdump_split/split7.pcap"
-#if 0
 #endif 
 	}; /*trace file*/
 
@@ -67,13 +68,14 @@ u_char *prep_next_skb(file_cache_t *fct,u_int32_t *pktlen)
 	}
 	/* if end */
 	if (fct->offset == fct->size) 
-		fct->offset = sizeof(pf_hdr_t);
-	
+		//fct->offset = sizeof(pf_hdr_t); //
+		return NULL; /* never do loop replay, only once */
+
 	/*set packet data and hdr pointer,? no copy*/
 	p_hdr_t *hdr = (p_hdr_t*)(fct->fcache + fct->offset);
 	u_int32_t caplen = hdr->ncl_len; 
 	FOFFSET(sizeof(p_hdr_t));
-	u_char *pktdata = fct->fcache + fct->offset;
+	u_char *pktdata = (u_char*) (fct->fcache + fct->offset);
 	FOFFSET(hdr->ncl_len);
 	
 	if (fct->offset > fct->size) {
@@ -114,7 +116,7 @@ file_cache_t *preload_pcap_file(int queue_map)
 {
 
 	FILE	*fp;
-	const char 		*fcache=NULL;
+	char 	*fcache=NULL;
 	unsigned long 	size; 
 	file_cache_t 	*fct;
 	char errbuf[256];

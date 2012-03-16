@@ -1,4 +1,4 @@
-LIBS = -lps -lnuma
+LIBS = -lpthread -lps -lnuma
 LIB_DIR = -L../../lib
 
 .PHONY: clean
@@ -6,7 +6,7 @@ LIB_DIR = -L../../lib
 all: tx 
 
 tx: tx.c pkt_buff.c
-	gcc  -O0 -g -Wall -o tx tx.c pkt_buff.c $(LIB_DIR) $(LIBS)
+	gcc  -O0 -g -Wall -o rep_trace tx.c pkt_buff.c $(LIB_DIR) $(LIBS)
 
 clean:
 	rm -f tx 
