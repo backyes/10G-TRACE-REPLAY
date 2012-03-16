@@ -8,33 +8,43 @@
 
 
 char fname[QUEUE_NUM][256]={
-	"/home/backyes/trace/split0.pcap",
-	"/home/backyes/trace/split1.pcap",
-	"/home/backyes/trace/split2.pcap",
-	"/home/backyes/trace/split3.pcap",
-	"/home/backyes/trace/split4.pcap",
-	"/home/backyes/trace/split5.pcap",
-	"/home/backyes/trace/split6.pcap",
-	"/home/backyes/trace/split7.pcap",
 #if 0
-	"/home/kay/trace/fix_split0.pcap",
-	"/home/kay/trace/fix_split1.pcap",
-	"/home/kay/trace/fix_split2.pcap",
-	"/home/kay/trace/fix_split3.pcap",
-	"/home/kay/trace/fix_split4.pcap",
-	"/home/kay/trace/fix_split5.pcap",
-	"/home/kay/trace/fix_split6.pcap",
-	"/home/kay/trace/fix_split7.pcap",
-	"/home/kay/trace/split0.pcap",
-	"/home/kay/trace/split1.pcap",
-	"/home/kay/trace/split2.pcap",
-	"/home/kay/trace/split3.pcap",
-	"/home/kay/trace/split4.pcap",
-	"/home/kay/trace/split5.pcap",
-	"/home/kay/trace/split6.pcap",
-	"/home/kay/trace/split7.pcap",
+	"/home/backyes/trace/80.pcap",
+	"/home/backyes/trace/80.pcap",
+	"/home/backyes/trace/80.pcap",
+	"/home/backyes/trace/80.pcap",
+	"/home/backyes/trace/80.pcap",
+	"/home/backyes/trace/80.pcap",
+	"/home/backyes/trace/80.pcap",
+	"/home/backyes/trace/80.pcap",
+	"/home/backyes/trace/64.pcap",
+	"/home/backyes/trace/64.pcap",
+	"/home/backyes/trace/64.pcap",
+	"/home/backyes/trace/64.pcap",
+	"/home/backyes/trace/64.pcap",
+	"/home/backyes/trace/64.pcap",
+	"/home/backyes/trace/64.pcap",
+	"/home/backyes/trace/64.pcap",
+	"/home/backyes/trace/fix_split/split0.pcap",
+	"/home/backyes/trace/fix_split/split1.pcap",
+	"/home/backyes/trace/fix_split/split2.pcap",
+	"/home/backyes/trace/fix_split/split3.pcap",
+	"/home/backyes/trace/fix_split/split4.pcap",
+	"/home/backyes/trace/fix_split/split5.pcap",
+	"/home/backyes/trace/fix_split/split6.pcap",
+	"/home/backyes/trace/fix_split/split7.pcap"
 #endif
-}; /*trace file*/
+	"/home/backyes/trace/80_2_tcpdump_split/split0.pcap",
+	"/home/backyes/trace/80_2_tcpdump_split/split1.pcap",
+	"/home/backyes/trace/80_2_tcpdump_split/split2.pcap",
+	"/home/backyes/trace/80_2_tcpdump_split/split3.pcap",
+	"/home/backyes/trace/80_2_tcpdump_split/split4.pcap",
+	"/home/backyes/trace/80_2_tcpdump_split/split5.pcap",
+	"/home/backyes/trace/80_2_tcpdump_split/split6.pcap",
+	"/home/backyes/trace/80_2_tcpdump_split/split7.pcap"
+#if 0
+#endif 
+	}; /*trace file*/
 
 file_cache_t 					*file_cache_head=NULL;
 

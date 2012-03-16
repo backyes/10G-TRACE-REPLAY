@@ -61,7 +61,7 @@ time.sleep(3)
 print 'number of ifs : %d, number of rx queues: %d, number of tx queues: %d' % (num_ifs, num_rx_queues, num_tx_queues)
 
 for i in range(num_ifs):
-	ifname = 'eth%d' % (i+2)
+	ifname = 'xge%d' % (i)
 	print 'setting %s...' % ifname,
 	
 	execute('ethtool -A %s autoneg off rx off tx off' % ifname)

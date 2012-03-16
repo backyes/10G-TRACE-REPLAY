@@ -1,12 +1,12 @@
-LIBS = -lps 
+LIBS = -lps -lnuma
 LIB_DIR = -L../../lib
 
 .PHONY: clean
 
-all: echo
+all: tx 
 
-echo: echo.c pkt_buff.c
-	gcc -O2 -g -Wall -o echo echo.c pkt_buff.c $(LIB_DIR) $(LIBS)
+tx: tx.c pkt_buff.c
+	gcc  -O0 -g -Wall -o tx tx.c pkt_buff.c $(LIB_DIR) $(LIBS)
 
 clean:
-	rm -f echo
+	rm -f tx 

@@ -68,7 +68,7 @@ ifeq (,$(KSRC))
   KSRC := $(firstword $(KSP))
 endif
 
-KSRC := /home/backyes/git.linux-2.6.tovard
+KSRC := /home/xyuez/works/kernel_src/linux-2.6.39.4
 
 ifeq (,$(KSRC))
   $(warning *** Linux kernel source not found in any of these locations:)
