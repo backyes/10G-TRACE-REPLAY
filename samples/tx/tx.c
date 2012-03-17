@@ -237,6 +237,9 @@ last_chunk:
 			chunk.queue.ifindex = devices_attached[i];
 
 			int ret = ps_send_chunk(handle, &chunk);
+			
+			/* FIXME:never discard one packet */
+			if(ret < chunk.cnt) assert(ret < chunk.cnt);
 
 			assert(ret >= 0);
 		}
