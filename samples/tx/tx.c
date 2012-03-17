@@ -144,6 +144,7 @@ already_attached:
 	assert(num_devices_attached > 0);
 }
 
+#define BATCH_SIZE 128
 void *echo(void *arg)
 {
 	thread_ctrl *pth_ctrl = (thread_ctrl*) arg;
@@ -168,29 +169,7 @@ void *echo(void *arg)
 	bind_cpu(cpu_id);
 	assert(ps_init_handle(handle) == 0);
 
-	for (i = 0; i < num_devices_attached; i++) {
-		struct ps_queue queue;
-		if (devices[devices_attached[i]].num_rx_queues <= cpu_id)
-			continue;
-
-		if (devices[devices_attached[i]].num_tx_queues <= cpu_id) {
-			printf("WARNING: xge%d has not enough TX queues!\n",
-					devices_attached[i]);
-			continue;
-		}
-
-		working = 1;
-		queue.ifindex = devices_attached[i];
-		queue.qidx = cpu_id;
-
-		printf("attaching TX queue xge%d:%d to CPU%d\n", queue.ifindex, queue.qidx, cpu_id);
-		assert(ps_attach_rx_device(handle, &queue) == 0);
-	}
-
-	if (!working)
-		goto done;
-
-	//Preload pcap file --Kay
+	//Preload pcap file --must done after bind_cpu() call. 
 	if ((fct = preload_pcap_file(cpu_id)) != NULL) {
 		printf("Loading done, core %d\n", cpu_id);
 		if (!check_pcap(fct))
@@ -199,30 +178,48 @@ void *echo(void *arg)
 		printf("Loading failed, core %d\n", cpu_id);
 	}
 
+	for (i = 0; i < num_devices_attached; i++) {
+
+		if (devices[devices_attached[i]].num_tx_queues <= cpu_id) {
+			printf("WARNING: xge%d has not enough TX queues!\n",
+					devices_attached[i]);
+			continue;
+		}
+
+		working = 1;
+
+		printf("attaching TX queue xge%d:%d to CPU%d\n", devices_attached[i], cpu_id, cpu_id);
+	}
+
+	if (!working)
+		goto done;
+
 	assert(ps_alloc_chunk(handle, &chunk) == 0);
-
-	chunk.cnt = 128; // Change this chunk size to improve TX performance --Kay
+	
+	/* initialise chunk */
+	chunk.queue.qidx = cpu_id;
+	chunk.cnt = BATCH_SIZE;
 	chunk.recv_blocking = 1;
-	printf("%d CPU: begin to replay, chunk.cnt = %d\n", cpu_id, chunk.cnt);
 
+	printf("%d CPU: chunk.cnt = %d\n", cpu_id, chunk.cnt);
+	
+	/* begin to replay */
 	pthread_barrier_wait(pth_ctrl->barrier);
 
 	gettimeofday(&(pth_ctrl->starttime), NULL);
-
-	for (;;) {
-
+	
+	while(1) {
+		/* build packets */
 		for (i=0; i < chunk.cnt; i++) {
-//!----------------loop perf show-----------------
 retry:
 			pktdata = prep_next_skb(fct, &pktlen);
 			if(pktdata == NULL) {
-					if(loop == 0) goto last_chunk; 
-					else {
-						fct->offset = sizeof(pf_hdr_t);
-						goto retry;
-					}
+				if(loop == 0) goto last_chunk;
+				else {
+					fct->offset = sizeof(pf_hdr_t);
+					goto retry;
+				}
 			}
-//!-----------------------------------------------
 
 			chunk.info[i].offset = i * MAX_PACKET_SIZE;
 			chunk.info[i].len = pktlen;
@@ -231,11 +228,22 @@ retry:
 					pktlen);
 		}
 
-		int ret = ps_send_chunk(handle, &chunk);
+last_chunk:
+		if(i < BATCH_SIZE) 	chunk.cnt = i; 
 
-		assert(ret >= 0);
-//!---------------------loop perf show----------------------------------------
-		//! dynamic show performance
+		/* send packets */
+		for (i = 0; i < num_devices_attached; i++) {
+
+			chunk.queue.ifindex = devices_attached[i];
+
+			int ret = ps_send_chunk(handle, &chunk);
+
+			assert(ret >= 0);
+		}
+		/* send over */
+		if(chunk.cnt < BATCH_SIZE) break;
+
+		/* dynamic show performance */
 		if(loop == 1) {
 			total_tx_packets = 0;
 			total_tx_bytes = 0;
@@ -256,23 +264,16 @@ retry:
 						total_tx_bytes/total_tx_packets);
 			}
 			
-		} //end loop perf_show
-//!----------------------------------------------------------------------------
-	}
-last_chunk:
-	chunk.cnt = i;
-	int ret = ps_send_chunk(handle, &chunk);
+		} /* end performance */ 
 
-	assert(ret >= 0);
-
+	} /* external loop */
+	
 	gettimeofday(&(pth_ctrl->endtime), NULL);
-
-	printf("%d CPU: last chunk %d packets\n", cpu_id, chunk.cnt);
 	timersub(&pth_ctrl->endtime, &pth_ctrl->starttime, &subtime);
 
-	//!show performance
-	assert (num_devices_attached == 1);
+	printf("%d CPU: last chunk %d packets\n", cpu_id, chunk.cnt);
 
+	/* performance statistics */
 	total_tx_packets = 0;
 	total_tx_bytes = 0;
 	for (i = 0; i < num_devices_attached; i++) {

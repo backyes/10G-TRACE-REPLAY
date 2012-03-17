@@ -3,7 +3,7 @@
 all: pslib.a
 
 pslib.a: pslib.c
-	gcc -O2 -c -g -Wall -o pslib.o pslib.c
+	gcc -c -g -Wall -o pslib.o pslib.c
 	ar rcs libps.a pslib.o
 
 clean:
