@@ -1,0 +1,9 @@
+
+./confugre
+make 
+./Osplit -f /home/backyes/tracefile.pcap
+
+Generated traces in /home/bakcyes/trace/split0.pcap. split1.pcap. split2.pcap ....
+
+1. SPLIT_FILE_NUM  marco in nids.h : number of generated traces.
+2. sprintf(file[i],"/home/backyes/trace/split%d.pcap",i); in Osplit.c : generated trace file name.

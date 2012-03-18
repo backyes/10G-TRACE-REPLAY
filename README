@@ -27,6 +27,22 @@ Improments:
  * (3) Conclusion:
  *	it can replay trace at the speed of approximately line-rate...
  */
+add-on: Osplit      --one program that split trace file based on TCP flow.
+	Since the speed gap between the disk and memory, we must buffer the disk trace file in kenrel
+for high speed. Also, to take advantage of multi-queue for 10G replay, we expect to split the raw
+trace into N child traces based on ways, such as src IP + dst IP, 4 tuples srcIP+dstIP+srcPort+dstPort, to keep
+flow affinity and TX queue balance at best. 
+The Split program is in directory of userspace_split,
+	Usage of Oplist:
+	1. install the libnet-1.1.5 in sub-directroy of userspace_split
+	2. install the libpcap-1.1.1 in sub-directroy of userspace_split
+	3. install the libnids-1.24 in sub-directroy of userspace_split
+	modify line 73 in Osplit.c which locates in src directory to locate the child traces.
+	cd libnids-1.24
+	./configure
+	make
+	cd src
+
 NOTICE:
 
 driver/Makefile  	-- Set "KSRC" to the kernel dir
