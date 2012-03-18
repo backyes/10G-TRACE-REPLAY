@@ -263,7 +263,7 @@ send_left:
 
 			assert(ret >= 0);
 			
-			/* FIXME:never discard one packet */
+			/* never discard one packet */
 			if(ret < chunk.cnt) {
 				for(i = ret; i < chunk.cnt; i++) {
 					chunk.info[i - ret].offset = (i - ret) * MAX_PACKET_SIZE;
@@ -274,6 +274,7 @@ send_left:
 				}
 				chunk.cnt -= ret;
 				assert(chunk.cnt >= 0);
+				usleep(10);
 				goto send_left;
 			} /* end resend packets left */
 
