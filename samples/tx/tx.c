@@ -20,10 +20,22 @@
 
 #include "../../include/ps.h"
 
-//! Modified by backyes@gmai.com, Fri Mar 16 18:34:00 CST 2012
-//
+/* Author: Yanfei Wang, backyes@gmai.com
+ * Fri Mar 16 18:34:00 CST 2012
+ * improvements
+ * (1) send packets at the same time for all queueus.
+ * (2) never discard any packets for specified traces
+ * (3) allow loop or once-trace-replay as you wish.
+ * (4) use pthread lib to rewrite it for supporting fine grained sysnc.
+ * optimization on performance
+ * (5) fix bugs on spin_lock_bh spothot that caused by wrong program.
+ * (6) supports on numa lib, allocate memory after numa bind.
+ */
 #define MAX_CPUS 32
+/* chunk batch size */
+#define BATCH_SIZE 128
 
+/* global var */
 int num_devices;
 struct ps_device devices[MAX_DEVICES];
 int num_devices_attached;
@@ -33,6 +45,7 @@ long tot_packets[MAX_CPUS];
 double tot_mpps[MAX_CPUS];
 int loop = 0;
 
+/* thread worker var */
 pthread_barrier_t  barrier;
 
 typedef struct _thread_ctrl {
@@ -144,7 +157,6 @@ already_attached:
 	assert(num_devices_attached > 0);
 }
 
-#define BATCH_SIZE 128
 void *echo(void *arg)
 {
 	thread_ctrl *pth_ctrl = (thread_ctrl*) arg;
@@ -165,6 +177,7 @@ void *echo(void *arg)
 
 	int i;
 	int working = 0;
+	int loop_end = 0;
 
 	bind_cpu(cpu_id);
 	assert(ps_init_handle(handle) == 0);
@@ -207,14 +220,21 @@ void *echo(void *arg)
 	pthread_barrier_wait(pth_ctrl->barrier);
 
 	gettimeofday(&(pth_ctrl->starttime), NULL);
-	
+
 	while(1) {
+
+		chunk.cnt = BATCH_SIZE;
+
 		/* build packets */
 		for (i=0; i < chunk.cnt; i++) {
 retry:
 			pktdata = prep_next_skb(fct, &pktlen);
+
 			if(pktdata == NULL) {
-				if(loop == 0) goto last_chunk;
+				if(loop == 0) { 
+					loop_end = 1;
+					goto last_chunk;
+				}
 				else {
 					fct->offset = sizeof(pf_hdr_t);
 					goto retry;
@@ -229,24 +249,39 @@ retry:
 		}
 
 last_chunk:
-		if(i < BATCH_SIZE) 	chunk.cnt = i; 
+		/* set cnt */
+		chunk.cnt = i;
 
+		int ret;
 		/* send packets */
 		for (i = 0; i < num_devices_attached; i++) {
 
 			chunk.queue.ifindex = devices_attached[i];
 
-			int ret = ps_send_chunk(handle, &chunk);
-			
-			/* FIXME:never discard one packet */
-			if(ret < chunk.cnt) assert(ret < chunk.cnt);
+send_left:
+			ret = ps_send_chunk(handle, &chunk);
 
 			assert(ret >= 0);
+			
+			/* FIXME:never discard one packet */
+			if(ret < chunk.cnt) {
+				for(i = ret; i < chunk.cnt; i++) {
+					chunk.info[i - ret].offset = (i - ret) * MAX_PACKET_SIZE;
+					chunk.info[i - ret].len = pktlen;
+					memcpy_aligned_tx(chunk.buf + chunk.info[i - ret].offset,
+							chunk.buf + chunk.info[i].offset,
+							chunk.info[i].len);
+				}
+				chunk.cnt -= ret;
+				assert(chunk.cnt >= 0);
+				goto send_left;
+			} /* end resend packets left */
+
 		}
 		/* send over */
-		if(chunk.cnt < BATCH_SIZE) break;
+		if(loop_end == 1) break;
 
-		/* dynamic show performance */
+		/* dynamic performance */
 		if(loop == 1) {
 			total_tx_packets = 0;
 			total_tx_bytes = 0;
@@ -315,7 +350,6 @@ last_chunk:
 
 done:
 	ps_close_handle(handle);
-
 	return 0;
 }
 
