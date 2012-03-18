@@ -1,0 +1,45 @@
+Kai Zhang  <kay21s AT gmail DOT com> /* old version Author */
+Yanfei Wang <backyes AT gmail DOT com>
+
+Based on IOEngine from PacketShader, send packets from a specified trace file at speed of 10Gbps
+Make some modification in the driver to adapt to current kernel version(2.6.37)
+
+Improvements:
+/* Author: Yanfei Wang, <backyes@gmail.com>
+ * Fri Mar 16 18:34:00 CST 2012
+ * improvements
+ * (1) send packets at the same time for all queueus.
+ * (2) never discard any packets for specified traces
+ * (3) allow loop or once-trace-replay as you wish.
+ * (4) use pthread lib to rewrite it for supporting fine grained sysnc.
+ * optimization on performance
+ * (5) fix bugs on spin_lock_bh spothot(>80% overhead on cpu cycle).
+ * (6) supports on numa lib, allocate memory after numa bind.
+ * (7) do sync. among all threads with pthread lib instead of "fork", so rewrite most data structure for per-thread variable.
+ */
+Improments:
+/* Author: Yanfei Wang, <backyes@gmail.com>
+ *	(1) usleep(n) to avoid small chunk size cause by sending remained packets for keeping "non-discard replay " manner..
+ * (2) performance test 
+ *	fix.mill-->split0.pcap split1.pcap ...(total 8 sub-traces)
+ *	average packet size: ~90B (non-64Byte)
+ *	Performance: 7.9Gbps(L2 payload), 10.4Mpps...
+ * (3) Conclusion:
+ *	it can replay trace at the speed of approximately line-rate...
+ */
+NOTICE:
+
+driver/Makefile  	-- Set "KSRC" to the kernel dir
+interface name	 	-- IOEngine uses ixg%d, while our machine uses eth%d, can be modified in driver/install.py
+sample/tx/tx.c    -- BATCH_SIZE, adjust to reduce system call overhead
+
+USAGE:
+
+Each TX thread uses a trace file, specify them in sample/tx/pktbuf.c : char fname[QUEUE_NUM][256];
+
+./configure
+Make
+./install.py [# of RX queue] [# of TX queue]
+./sample/tx/rep_trace [loop] xge# /* loop indicate replay trace in loop way. */
+
+
