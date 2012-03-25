@@ -262,22 +262,21 @@ send_left:
 			ret = ps_send_chunk(handle, &chunk);
 
 			assert(ret >= 0);
-			
+ 
 			/* never discard one packet */
-			if(ret < chunk.cnt) {
+			if((ret < chunk.cnt) && (ret > 0)) {
 				for(i = ret; i < chunk.cnt; i++) {
-					chunk.info[i - ret].offset = (i - ret) * MAX_PACKET_SIZE;
-					chunk.info[i - ret].len = pktlen;
-					memcpy_aligned_tx(chunk.buf + chunk.info[i - ret].offset,
-							chunk.buf + chunk.info[i].offset,
-							chunk.info[i].len);
+					chunk.info[i - ret].offset = i * MAX_PACKET_SIZE;
+					chunk.info[i - ret].len = chunk.info[i].len;
 				}
 				chunk.cnt -= ret;
 				assert(chunk.cnt >= 0);
-				usleep(10);
 				goto send_left;
 			} /* end resend packets left */
-
+			else if(ret == 0) { 
+				usleep(10);
+				goto send_left;
+			}
 		}
 		/* send over */
 		if(loop_end == 1) break;
